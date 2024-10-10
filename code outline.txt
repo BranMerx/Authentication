@@ -1,0 +1,16 @@
+import classes for the authentication
+
+
+def validate the face
+
+
+def validate finger
+
+
+if both are validated release the content.
+
+
+if register button pushed:
+
+Ask for prints and face
+Stored into database
