@@ -1,16 +1,35 @@
 import classes for the authentication
 
-
-def validate the face
-
-
-def validate finger
-
-
-if both are validated release the content.
-
-
 if register button pushed:
 
-Ask for prints and face
-Stored into database
+def collect facial data
+	Ask user for face 
+	Collect measurements
+	push into database
+		connect with userID
+
+def collect finger data
+	Ask user for fingerprint
+	collect information
+	push into database
+		connect with userID
+
+def set up username
+
+def set up password
+
+def set up user information
+
+def validate the face
+	Collect the facial data from user (Scan the face)
+	Pull from the database facial data
+	If they match, proceed to validate finger
+
+def validate finger
+	Collect the finger data from the user (Place finger on scanner)
+	Pull the database fingerprint data
+	If they match, proceed to the data. 
+
+If both unmatched, proceed to use standard username and password:
+
+
