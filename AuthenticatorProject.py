@@ -4,9 +4,14 @@ sys.path.append("C:\Program Files\FPBioimage\FPBioimage-4.5.0.exe")
 
 import cv2
 import numpy as np
+import os
 import tkinter as tk
+import skimage as ski
+import pyodbc
 from tkinter import *
 from tkinter.ttk import *
+
+
 
 #Button and GUI Creation
 root = Tk()
@@ -18,8 +23,10 @@ btn.pack(side='top')
 btn2.pack(side='top')
 btn3.pack(side = 'top')
 
-root.mainloop()
+#Database Connection:
+conn = pyodbc.connect()
 
+#Methods defined:
 def facial_collection():
     pass
 
@@ -37,3 +44,6 @@ def face_validate():
 def finger_validate():
     pass
 
+#If Statements for each Button pushed:
+
+root.mainloop()
