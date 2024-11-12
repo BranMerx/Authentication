@@ -24,7 +24,15 @@ btn3.place(x=900, y = 0)
 
 
 #Database Connection:
-#conn = pyodbc.connect()
+server = ''
+database = ''
+username = ''
+password = ''
+
+connection_string = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={};database={};UID={};PWD={}'
+conn = pyodbc.connect(connection_string)
+
+cursor = conn.cursor()
 
 cap = cv2.VideoCapture(0)
 while True:
