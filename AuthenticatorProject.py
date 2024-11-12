@@ -13,16 +13,6 @@ import threading
 face_casecade = cv2.CascadeClassifier(cv2.data.haarcascades + 'harcascade_frontalface_default.xml')
 finger_casecade = cv2.CascadeClassifier(cv2.data.haarcascades + 'harcascade_finger.xml')
 
-#Button and GUI Creation
-root = Tk()
-root.geometry('1000x1000')
-btn = Button (root, text = 'Register Profile', command=facial_collection)
-btn2 = Button (root, text = "Log in", command= face_validate)
-btn3 = Button (root, text="Exit", command = root.quit)
-btn.place(x = 500, y = 0)
-btn2.place(x= 0, y = 0)
-btn3.place(x=900, y = 0)
-
 
 #Database Connection:
 server = 'MERX_LAPT\SQLEXPRESS'
@@ -40,14 +30,37 @@ def user_creation():
     username = input("Please Set Up Username: ")
     password = input("Please Set Up Password: ")
 
+    #Code to push the information into the Database: (Need to have userID automatically increase)
+
     facial_collection()
     finger_collection()
 
 def facial_collection():
-    pass
+    cap = cv2.VideoCapture(0)
+    count = 0
+    face_data = []
+
+    while count < 5:
+        ret, frame = cap.read()
+        gray = cv2.cvtColor (frame, cv2.COLOR_BGR2GRAY)
+        faces = face_casecade.detectMultiScale(gray, 1.3,5) 
+
+        for(x, y, w, h) in faces:
+            face = gray[y:y+h, x:x+w]
+            face_data.append(face)
+
+            #Store the face into the database
 
 def finger_collection():
-    pass
+    cap = cv2.VideoCapture(0)
+    count = 0
+
+    while count < 5:
+        ret, frame = cap.read()
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        fingers = finger_casecade.detectMultiScale(gray, 1.3, 5)
+
+        
 
 def face_validate():
     cap = cv2.VideoCapture(0)
@@ -66,5 +79,14 @@ def face_validate():
 def finger_validate():
     pass
 
+#Button and GUI Creation
+root = Tk()
+root.geometry('1000x1000')
+btn = Button (root, text = 'Register Profile', command = user_creation)
+btn2 = Button (root, text = "Log in", command= face_validate)
+btn3 = Button (root, text="Exit", command = root.quit)
+btn.place(x = 500, y = 0)
+btn2.place(x= 0, y = 0)
+btn3.place(x=900, y = 0)
 
 root.mainloop()
