@@ -17,14 +17,31 @@ finger_casecade = cv2.CascadeClassifier(cv2.data.haarcascades + 'harcascade_fing
 #Database Connection:
 server = 'MERX_LAPT\SQLEXPRESS'
 database = 'Authentication'
-username = ''
-password = ''
+username = 'MERX_LAPT\brand'
+password = '10292001'
 
-connection_string = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={'MERX_LAPT\SQLEXPRESS'};DATABASE={'Authentication'};UID={};PWD={}'
-conn = pyodbc.connect(connection_string)
+connection_string = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}'
+try:
+    conn = pyodbc.connect(connection_string)
+    cursor = conn.cursor()
+    
+    # Execute a simple test query
+    cursor.execute("SELECT 1")
+    result = cursor.fetchone()
+    
+    if result:
+        print("Connection successful!")
+    else:
+        print("Connection established, but test query failed.")
 
-cursor = conn.cursor()
+except pyodbc.Error as e:
+    print("Error connecting to SQL Server:", e)
 
+finally:
+    if 'conn' in locals():
+        conn.close() 
+
+"""
 #Methods defined:
 def user_creation():
     username = input("Please Set Up Username: ")
@@ -68,11 +85,15 @@ def face_validate():
         ret, frame = cap.read()
         gray = cv2.cvtColor (frame, cv2.COLOR_BGR2GRAY)
         faces = face_casecade.detectMultiScale(gray, 1.3,5)
-        for(x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (255,0,0), 2)
-        cv2.imshow('Facial Recognition', frame)
-        if cv2.waitKey(1)& 0xFF == ord('q'):
+
+        for (x, y, w, h) in faces:
+            face = gray[y:y+h, x:x+w]
+
+            cv2.rectangle(frame, (x,y), (x+w, y+h), (255,0,0), 2)
+        cv2.imshow("Face Validation", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+    
     cap.release()
     cv2.destroyAllWindows()
 
@@ -90,3 +111,4 @@ btn2.place(x= 0, y = 0)
 btn3.place(x=900, y = 0)
 
 root.mainloop()
+"""
