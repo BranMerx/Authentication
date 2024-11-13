@@ -17,10 +17,9 @@ finger_casecade = cv2.CascadeClassifier(cv2.data.haarcascades + 'harcascade_fing
 #Database Connection:
 server = 'MERX_LAPT\SQLEXPRESS'
 database = 'Authentication'
-username = 'MERX_LAPT\brand'
-password = '10292001'
 
-connection_string = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}'
+
+connection_string = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={server};DATABASE={database};Trusted_Connection=yes;Encrypt=no'
 try:
     conn = pyodbc.connect(connection_string)
     cursor = conn.cursor()
@@ -41,7 +40,6 @@ finally:
     if 'conn' in locals():
         conn.close() 
 
-"""
 #Methods defined:
 def user_creation():
     username = input("Please Set Up Username: ")
@@ -111,4 +109,4 @@ btn2.place(x= 0, y = 0)
 btn3.place(x=900, y = 0)
 
 root.mainloop()
-"""
+
