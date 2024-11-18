@@ -44,6 +44,11 @@ finally:
 def user_creation():
     username = input("Please Set Up Username: ")
     password = input("Please Set Up Password: ")
+    firstname = input("Please Enter Your First Name: ")
+    lastname = input("Please Enter Your Last Name: ")
+    email = input("Please Enter Your Email: ")
+    password = input("Please Enter Your Password: ")
+
 
     #Code to push the information into the Database: (Need to have userID automatically increase)
 
