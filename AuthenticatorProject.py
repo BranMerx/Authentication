@@ -26,58 +26,61 @@ cursor= conn.cursor()
 
 #Methods defined:
 def user_creation_gui():
-    username = entry_username.get()
-    password = entry_password.get()
-    firstname = entry_firstname.get()
-    lastname = entry_lastname.get()
-    email = entry_email.get()
-    password = entry_password.get()
-    userID = random.randint(1,1000)  #Randomly generated userID
-
-
-    #Code to push the information into the Database: (Need to have userID automatically increase)
-    cursor.execute(f"INSERT INTO Users (UserID, Username, Password, FirstName, LastName, Email) VALUES ('{userID}', '{username}', '{password}', '{firstname}', '{lastname}', '{email}')")
-    conn.commit()
-
-
-    facial_collection(userID)
-    finger_collection(userID)
-
-    for entry in[entry_username, entry_password, entry_firstname, entry_lastname, entry_email]:
-        entry.delete(0, END)
-
-    tk.messagebox.showinfo("Success", "User has been created successfully")
-    
     register_window = tk.Tk()
     register_window.title("User Registration")
     register_window.geometry("400x300")
 
-    # Labels and Entry Fields
-    tk.Label(register_window, text="First Name:").grid(row=0, column=0, padx=10, pady=5, sticky=W)
+    entry_firstname = tk.Entry(register_window)
+    entry_lastname = tk.Entry(register_window)
+    entry_email = tk.Entry(register_window)
+    entry_username = tk.Entry(register_window)
+    entry_password = tk.Entry(register_window, show="*")
+
+        # Labels and Entry Fields
+    tk.Label(register_window, text="First Name:").grid(row=0, column=0, padx=10, pady=5, sticky=tk.W)
     entry_firstname = tk.Entry(register_window)
     entry_firstname.grid(row=0, column=1, padx=10, pady=5)
 
-    tk.Label(register_window, text="Last Name:").grid(row=1, column=0, padx=10, pady=5, sticky=W)
+    tk.Label(register_window, text="Last Name:").grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
     entry_lastname = tk.Entry(register_window)
     entry_lastname.grid(row=1, column=1, padx=10, pady=5)
 
-    tk.Label(register_window, text="Email:").grid(row=2, column=0, padx=10, pady=5, sticky=W)
+    tk.Label(register_window, text="Email:").grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
     entry_email = tk.Entry(register_window)
     entry_email.grid(row=2, column=1, padx=10, pady=5)
 
-    tk.Label(register_window, text="Username:").grid(row=3, column=0, padx=10, pady=5, sticky=W)
+    tk.Label(register_window, text="Username:").grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
     entry_username = tk.Entry(register_window)
     entry_username.grid(row=3, column=1, padx=10, pady=5)
 
-    tk.Label(register_window, text="Password:").grid(row=4, column=0, padx=10, pady=5, sticky=W)
-    entry_password = tk.Entry(register_window, show="*")
+    tk.Label(register_window, text="Password:").grid(row=4, column=0, padx=10, pady=5, sticky=tk.W)
     entry_password.grid(row=4, column=1, padx=10, pady=5)
+   
+    #Submit function
+    def submit_user():
+        firstname = entry_firstname.get()
+        lastname = entry_lastname.get()
+        email = entry_email.get()
+        username = entry_username.get()
+        password = entry_password.get()
+        
+        #Code to push the information into the Database: (Need to have userID automatically increase)
+        cursor.execute("INSERT INTO [User] (Username, PasswordHash, FirstName, LastName, Email) OUTPUT INSERTED.UserID VALUES(?,?,?,?,?)", (username, password, firstname, lastname, email)
+        )
+        conn.commit()
 
-    # Register Button
-    tk.Button(register_window, text="Register", command=register_user).grid(row=5, column=0, columnspan=2, pady=10)
+        cursor.execute("SELECT SCOPE_IDENTITY()")
+        userID = cursor.fetchone()[0]
+
+        facial_collection(userID)
+        finger_collection(userID)
+
+        for entry in[entry_username, entry_password, entry_firstname, entry_lastname, entry_email]:
+            entry.delete(0, tk.END)
+
+    tk.Button(register_window, text="Register", command=submit_user).grid(row=5, column=0, columnspan=2, padx=10, pady=10)
 
     register_window.mainloop()
-#GUI window
 
 def facial_collection(userID):
     #After the user has been created, the user will be prompted to collect their facial data
@@ -104,11 +107,13 @@ def facial_collection(userID):
         cv2.destroyAllWindows()
 
         #Insert Fface data into the database)
-        facialID = int(random.randint(1000,2000))
-        cursor.execute(f"INSERT INTO Facial (FacialID, UserID, Facialdata) VALUES ('{facialID}','{userID}', '{face_data}')")
-        conn.commit()
+        for face in face_data:
+            facialID = int(random.randint(1000,2000))
+            cursor.execute(f"INSERT INTO Facial (FacialID, UserID, FacialData) VALUES ('{facialID}','{userID}', '{face_data}')")
+            conn.commit()
 
-def finger_collection():
+
+def finger_collection(userID):
     cap = cv2.VideoCapture(0)
     count = 0
     finger_data = []
@@ -116,6 +121,7 @@ def finger_collection():
     while count < 5:
         ret, frame = cap.read()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        finger_data.append(gray.tobytes())
         count += 1
 
         cv2.imshow("Finger Collection", frame)
@@ -126,9 +132,10 @@ def finger_collection():
     cv2.destroyAllWindows()
 
     #insert fingerprint data into the database
-    FingerprintID = int(random.randint(2000,3000))
-    cursor.execute(f"INSERT INTO Fingerprint (FingerprintID, UserID, Fingerprintdata) VALUES ('{FingerprintID}','{userID}', '{finger_data}')")
-    conn.commit()
+    for finger in finger_data:
+        fingerID = int(random.randint(1000,2000))
+        cursor.execute(f"INSERT INTO Finger (FingerID, UserID, FingerData) VALUES ('{fingerID}','{userID}', '{finger_data}')")
+        conn.commit()
         
 
 def face_validate():
@@ -172,7 +179,7 @@ def finger_validate():
 #Button and GUI Creation
 root = Tk()
 root.geometry('1000x1000')
-btn = Button (root, text = 'Register Profile', command = user_creation_gui())
+btn = Button (root, text = 'Register Profile', command = user_creation_gui)
 btn2 = Button (root, text = "Log in", command= face_validate)
 btn3 = Button (root, text="Exit", command = root.quit)
 btn.place(x = 500, y = 0)
