@@ -2,18 +2,28 @@
 
 import cv2
 import numpy as np
+import sys
 import os
 import tkinter as tk
 import skimage as ski
 import pyodbc
 from tkinter import *
-from tkinter.ttk import *
 import threading
 import random
 
-face_casecade = cv2.CascadeClassifier(cv2.data.haarcascades + 'harcascade_frontalface_default.xml')
-finger_casecade = cv2.CascadeClassifier(cv2.data.haarcascades + 'harcascade_finger.xml')
+neurotec_path = "C:\\Program Files\\Neurotechnology\\Neurotec Biometric SDK 11.2\\Bin\\Win64_x64"
+if neurotec_path not in sys.path:
+    sys.path.append(neurotec_path)
 
+os.environ['NEUROTEC_PATH'] = neurotec_path
+
+face_casecade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+from NeurotecSDK.Bin.Win64_x64 import NFinger;
+from NeurotecSDK.Bin.Win64_x64 import NBiometricClient;
+
+client = NBiometricClient()
+finger = NFinger()
 
 #Database Connection:
 server = 'MERX_LAPT\SQLEXPRESS'
@@ -141,8 +151,14 @@ def finger_collection(userID):
 def face_validate():
     #User will be prompted to validate their face by capturing their face and comparing it with the data stored in the database
     cap = cv2.VideoCapture(0)
+    valid = False
+
     while True:
         ret, frame = cap.read()
+        if not ret:
+            print("Failed to access camera.")
+            break
+
         gray = cv2.cvtColor (frame, cv2.COLOR_BGR2GRAY)
         faces = face_casecade.detectMultiScale(gray, 1.3,5)
 
@@ -158,21 +174,33 @@ def face_validate():
     cv2.destroyAllWindows()
 
 def finger_validate():
-    #user will be prompted to validate their finger by capturing their finger and comparing it with the data stored in the database
-    cap = cv2.VideoCapture(0)
-    while True:
-        ret, frame = cap.read()
-        gray = cv2.cvtColor (frame, cv2.COLOR_BGR2GRAY)
-        fingers = finger_casecade.detectMultiScale(gray, 1.3,5)
+        valid = False
+        # Assume `nffv` initialized from Neurotec SDK
+        capture = finger.capture()
+        if capture:
+            cursor.execute("SELECT FingerData FROM Finger WHERE UserID = ?", (userID,))
+            stored_fingers = cursor.fetchall()
+            for stored_finger in stored_fingers:
+                # Compare using Neurotec matcher
+                if nffv.match_templates(capture, stored_finger[0]):
+                    valid = True
+                    break
 
-        for (x, y, w, h) in fingers:
-            finger = gray[y:y+h, x:x+w]
+        return valid
 
-            cv2.rectangle(frame, (x,y), (x+w, y+h), (255,0,0), 2)
-        cv2.imshow("Finger Validation", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    # Run both validations
+face_valid = validate_face()
+finger_valid = validate_finger()
+
+if face_valid and finger_valid:
+    print("Welcome back!")
+else:
+    print("Sorry, you are not recognized.")
             
+#Function to validate the user's face and finger
+def validate_user():
+    def validate_face():
+        face_validate()
 
 
 
@@ -180,7 +208,7 @@ def finger_validate():
 root = Tk()
 root.geometry('1000x1000')
 btn = Button (root, text = 'Register Profile', command = user_creation_gui)
-btn2 = Button (root, text = "Log in", command= face_validate)
+btn2 = Button (root, text = "Log in", command= validate_user)
 btn3 = Button (root, text="Exit", command = root.quit)
 btn.place(x = 500, y = 0)
 btn2.place(x= 0, y = 0)
