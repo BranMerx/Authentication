@@ -10,6 +10,10 @@ import pyodbc
 from tkinter import *
 import threading
 import random
+import pickle
+
+face_casecade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
 
 neurotec_path = "C:\\Program Files\\Neurotechnology\\Neurotec Biometric SDK 11.2\\Bin\\Win64_x64"
 if neurotec_path not in sys.path:
@@ -17,10 +21,10 @@ if neurotec_path not in sys.path:
 
 os.environ['NEUROTEC_PATH'] = neurotec_path
 
-face_casecade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-from NeurotecSDK.Bin.Win64_x64 import NFinger;
-from NeurotecSDK.Bin.Win64_x64 import NBiometricClient;
+from NeurotecSDK import NFRecord, NFTemplate, NFinger
+from NeurotecSDK import NBiometricClient
+from NeurotecSDK import NBuffer
 
 client = NBiometricClient()
 finger = NFinger()
@@ -116,36 +120,41 @@ def facial_collection(userID):
         cap.release()
         cv2.destroyAllWindows()
 
-        #Insert Fface data into the database)
-        for face in face_data:
-            facialID = int(random.randint(1000,2000))
-            cursor.execute(f"INSERT INTO Facial (FacialID, UserID, FacialData) VALUES ('{facialID}','{userID}', '{face_data}')")
-            conn.commit()
-
-
-def finger_collection(userID):
-    cap = cv2.VideoCapture(0)
-    count = 0
-    finger_data = []
-
-    while count < 5:
-        ret, frame = cap.read()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        finger_data.append(gray.tobytes())
-        count += 1
-
-        cv2.imshow("Finger Collection", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    
-    cap.release()
-    cv2.destroyAllWindows()
-
-    #insert fingerprint data into the database
-    for finger in finger_data:
-        fingerID = int(random.randint(1000,2000))
-        cursor.execute(f"INSERT INTO Finger (FingerID, UserID, FingerData) VALUES ('{fingerID}','{userID}', '{finger_data}')")
+        #Insert Fface data into the database
+        serialized_faces = pickle.dumps(face_data)
+        cursor.execute(
+            "INSERT INTO Face (UserID, FaceData) VALUES (?, ?)",
+            (userID, serialized_faces)
+        )
         conn.commit()
+
+def capture_fingerprint():
+    try:
+        print("Please place your finger on the scanner.")
+        status = client.capture(finger)
+        if status.is_error:
+            print("Error capturing fingerprint:", status)
+            return None
+        return finger.get_template()
+    except Exception as e:
+        print("Error capturing fingerprint:", e)
+        return None
+
+
+def finger_collection(user_id):
+    print("Collecting fingerprint...")
+    capture = capture_fingerprint()
+    if capture is not None:
+        template_data = capture.get_data().to_byte_array()
+        finger_id = random.randint(1000, 2000)
+        cursor.execute(
+            "INSERT INTO Finger (FingerID, UserID, FingerData) VALUES (?, ?, ?)",
+            (finger_id, user_id, template_data)
+        )
+        conn.commit()
+        print("Fingerprint successfully collected!")
+    else:
+        print("Fingerprint collection failed.")
         
 
 def face_validate():
@@ -173,34 +182,15 @@ def face_validate():
     cap.release()
     cv2.destroyAllWindows()
 
-def finger_validate():
-        valid = False
-        # Assume `nffv` initialized from Neurotec SDK
-        capture = finger.capture()
-        if capture:
-            cursor.execute("SELECT FingerData FROM Finger WHERE UserID = ?", (userID,))
-            stored_fingers = cursor.fetchall()
-            for stored_finger in stored_fingers:
-                # Compare using Neurotec matcher
-                if nffv.match_templates(capture, stored_finger[0]):
-                    valid = True
-                    break
+def finger_validate(user_id):
+    cursor.execute("SELECT FingerData FROM Finger WHERE UserID = ?", (user_id,))
+    stored_finger_data = cursor.fetchall()
+    for data in stored_finger_data:
+        stored_template = NFTemplate(NBuffer.from_bytes(data[0]))
+        if client.verify(finger.get_template(), stored_template):
+            return True
+    return False
 
-        return valid
-
-    # Run both validations
-face_valid = validate_face()
-finger_valid = validate_finger()
-
-if face_valid and finger_valid:
-    print("Welcome back!")
-else:
-    print("Sorry, you are not recognized.")
-            
-#Function to validate the user's face and finger
-def validate_user():
-    def validate_face():
-        face_validate()
 
 
 
